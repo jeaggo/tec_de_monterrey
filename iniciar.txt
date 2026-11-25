@@ -1,2 +1,1 @@
-.\llamafile-0.10.6.exe - - server - - model qwen3-4b-thinking-2507.Q4_K_M.gguf
-
+El juego de Serpientes y escaleras es un clásico juego de tablero basado en el azar para dos o más jugadores, donde el objetivo es llegar primero a la última casilla. Este juego se base en conceptos básicos sobre Ciencia de Datos y el objetivo es medir tu conocimiennto en esta área de las Ciencias Computacionales.
