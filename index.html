@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Serpientes y Escaleras de la Ciencia de Datos</title>
+<style>
+:root{
+  --red:#D6001C; --red-d:#A30015; --red-l:#FDE8EA; --ink:#262626; --dk:#404040; --mid:#6b6b6b;
+  --lg:#F2F2F2; --ln:#D0D0D0; --wh:#fff; --ok:#1E8E3E; --ok-l:#E6F4EA; --bad-l:#FDE8EA;
+  --ladder:#8A5A2B; --snake:#2F7D32;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#fafafa;color:var(--ink);font-family:"Segoe UI",Arial,Helvetica,sans-serif}
+button{font-family:inherit;cursor:pointer}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 18px;background:var(--wh);border-bottom:1px solid var(--ln)}
+.brand h1{margin:0;font-size:22px;color:var(--red);line-height:1.15}
+.brand p{margin:2px 0 0;font-size:13px;color:var(--mid)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--ln);background:var(--wh);color:var(--ink);padding:9px 14px;border-radius:8px;font-size:14px;font-weight:600}
+.btn:hover{background:var(--lg)}
+.btn.primary{background:var(--red);border-color:var(--red);color:#fff}
+.btn.primary:hover{background:var(--red-d)}
+.btn.dark{background:var(--dk);border-color:var(--dk);color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+main{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;padding:16px 18px;max-width:1320px;margin:0 auto}
+@media (max-width:900px){main{grid-template-columns:1fr}}
+.boardWrap{position:relative;width:100%;max-width:calc(100vh - 110px);min-width:300px;aspect-ratio:1/1;margin:0 auto}
+.board{position:absolute;inset:0;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(6,1fr);border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.08);border:2px solid var(--dk)}
+.cell{position:relative;border:1px solid rgba(0,0,0,.08);display:flex;align-items:flex-start;justify-content:flex-start;padding:5px 7px}
+.cell .num{font-weight:800;font-size:clamp(11px,1.6vw,18px);color:var(--dk)}
+.cell .tag{position:absolute;left:6px;right:6px;bottom:5px;font-size:clamp(8px,.85vw,11px);line-height:1.15;color:var(--mid);font-weight:600}
+.cell.c0{background:#fff}.cell.c1{background:#F4F4F4}
+.cell.start{background:#EDEDED}.cell.goal{background:var(--red);}
+.cell.goal .num,.cell.goal .tag{color:#fff}
+.board.labels{border-color:transparent;box-shadow:none;pointer-events:none}
+.board.labels .cell{background:transparent;border-color:transparent}
+.cell .tag{background:rgba(255,255,255,.88);border-radius:4px;padding:2px 3px}
+.cell.goal .tag{background:transparent}
+.board.base .num,.board.base .tag{visibility:hidden}
+svg.overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.tokens{position:absolute;inset:0;pointer-events:none}
+.token{position:absolute;width:5.6%;height:5.6%;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:clamp(9px,1.1vw,14px);transition:left .28s ease,top .28s ease;transform:translate(-50%,-50%)}
+.token.active{outline:3px solid var(--ink);outline-offset:2px}
+.panel{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--wh);border:1px solid var(--ln);border-radius:12px;padding:14px}
+.card h2{margin:0 0 8px;font-size:15px;text-transform:uppercase;letter-spacing:.04em;color:var(--mid)}
+.turn{font-size:20px;font-weight:800;margin:0 0 4px}
+.status{font-size:14.5px;color:var(--dk);min-height:40px;line-height:1.35}
+.diceRow{display:flex;align-items:center;gap:14px;margin-top:10px}
+.die{width:78px;height:78px;border-radius:14px;background:#fff;border:2px solid var(--dk);display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:9px;flex:none}
+.die.roll{animation:shake .45s linear}
+@keyframes shake{0%{transform:rotate(0)}25%{transform:rotate(14deg)}50%{transform:rotate(-12deg)}75%{transform:rotate(8deg)}100%{transform:rotate(0)}}
+.pip{width:13px;height:13px;border-radius:50%;background:var(--red);align-self:center;justify-self:center;visibility:hidden}
+.pip.on{visibility:visible}
+#rollBtn{flex:1;font-size:17px;padding:14px}
+.players{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.players li{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:8px;background:var(--lg);font-size:14.5px}
+.players li.active{background:var(--red-l);font-weight:700}
+.dot{width:18px;height:18px;border-radius:50%;flex:none;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.2)}
+.players .pos{margin-left:auto;font-weight:700;color:var(--dk)}
+.players .sc{font-size:12px;color:var(--mid);margin-left:6px}
+.empty{color:var(--mid);font-size:14px;line-height:1.4}
+.legend{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--dk)}
+.legend span b{color:var(--ink)}
+/* modals */
+.modal{position:fixed;inset:0;background:rgba(20,20,20,.55);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal.open{display:flex}
+.box{background:#fff;border-radius:14px;max-width:760px;width:100%;max-height:92vh;overflow:auto;padding:22px 24px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.box h3{margin:0 0 12px;font-size:22px;color:var(--red)}
+.box p,.box li{font-size:15.5px;line-height:1.45}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:10px 0}
+label{font-weight:600;font-size:14.5px}
+select,input[type=text]{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--ln);border-radius:8px}
+.names{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+@media (max-width:560px){.names{grid-template-columns:1fr}}
+.names div{display:flex;align-items:center;gap:8px}
+.names input{flex:1;min-width:0}
+.actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--ln);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:8px 14px;font-weight:600;font-size:14.5px}
+.seg button.on{background:var(--dk);color:#fff}
+/* question */
+.qbox{max-width:860px}
+.qhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.qcat{background:var(--red);color:#fff;font-weight:700;font-size:13px;padding:5px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em}
+.qwho{font-weight:700;color:var(--dk);font-size:15px}
+.timer{font-weight:800;font-size:20px;color:var(--red);min-width:48px;text-align:right}
+.qtext{font-size:clamp(19px,2.3vw,26px);font-weight:700;margin:10px 0 16px;line-height:1.3}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:640px){.opts{grid-template-columns:1fr}}
+.opt{border:2px solid var(--ln);background:#fff;border-radius:10px;padding:13px 14px;text-align:left;font-size:clamp(15px,1.6vw,18px);display:flex;gap:10px;align-items:flex-start;line-height:1.3}
+.opt:hover:not(:disabled){border-color:var(--dk);background:var(--lg)}
+.opt .k{flex:none;width:26px;height:26px;border-radius:50%;background:var(--dk);color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center}
+.opt.correct{border-color:var(--ok);background:var(--ok-l)}
+.opt.correct .k{background:var(--ok)}
+.opt.wrong{border-color:var(--red);background:var(--bad-l)}
+.opt.wrong .k{background:var(--red)}
+.opt:disabled{cursor:default}
+.feedback{margin-top:14px;padding:12px 14px;border-radius:10px;font-size:16px;line-height:1.4;display:none}
+.feedback.show{display:block}
+.feedback.ok{background:var(--ok-l);border:1px solid var(--ok)}
+.feedback.bad{background:var(--bad-l);border:1px solid var(--red)}
+.log{list-style:none;margin:0;padding:0;font-size:14px}
+.log li{padding:7px 2px;border-bottom:1px solid var(--lg);line-height:1.35}
+.log .t{color:var(--mid);font-size:12px;margin-right:6px}
+.rank{list-style:none;padding:0;margin:0}
+.rank li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--lg);margin-bottom:6px;font-size:16px}
+.rank li:first-child{background:var(--red-l);font-weight:800}
+.rank .m{margin-left:auto;font-size:13.5px;color:var(--dk)}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:10px;font-size:15px;font-weight:600;opacity:0;transition:opacity .25s;z-index:60;max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:70}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <h1>Serpientes y Escaleras de la Ciencia de Datos</h1>
+    <p>¿Cuánto sabes de ciencia de datos? · Responde bien para avanzar</p>
+  </div>
+  <div class="toolbar">
+    <button class="btn" id="rulesBtn">Reglas</button>
+    <button class="btn" id="logBtn">Bitácora</button>
+    <button class="btn primary" id="newBtn">Nueva partida</button>
+    <button class="btn dark" id="endBtn" disabled>Terminar partida</button>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="boardWrap" id="boardWrap">
+      <div class="board base" id="board"></div>
+      <svg class="overlay" id="overlay" viewBox="0 0 600 600" aria-hidden="true"></svg>
+      <div class="board labels" id="labels"></div>
+      <div class="tokens" id="tokens"></div>
+    </div>
+  </section>
+  <aside class="panel">
+    <div class="card">
+      <h2>Turno</h2>
+      <p class="turn" id="turnName">Sin partida</p>
+      <div class="status" id="status">Pulsa «Nueva partida» para registrar a los jugadores.</div>
+      <div class="diceRow">
+        <div class="die" id="die" aria-label="Dado"></div>
+        <button class="btn primary" id="rollBtn" disabled>Lanzar dado</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Jugadores</h2>
+      <ul class="players" id="players"><li class="empty" style="background:none;padding:0">Aún no hay jugadores.</li></ul>
+    </div>
+    <div class="card">
+      <h2>Tablero</h2>
+      <div class="legend">
+        <span>🪜 <b>Escaleras:</b> buenas prácticas que te hacen subir.</span>
+        <span>🐍 <b>Serpientes:</b> errores comunes que te hacen bajar por la cola.</span>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<!-- Reglas -->
+<div class="modal" id="rulesModal" role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
+  <div class="box">
+    <h3 id="rulesTitle">Reglas del juego</h3>
+    <ol>
+      <li>Juegan de 1 a 8 jugadores o equipos. Cada uno escribe su nombre al iniciar la partida.</li>
+      <li>En tu turno, lanza el dado. Antes de avanzar, responde una pregunta de ciencia de datos.</li>
+      <li><b>Si aciertas</b>, avanzas las casillas que marcó el dado. <b>Si fallas</b> o se acaba el tiempo, te quedas donde estás.</li>
+      <li>Si terminas en la base de una <b>escalera</b> (una buena práctica), subes hasta su parte alta.</li>
+      <li>Si terminas en la cola de una <b>serpiente</b> (un error común), bajas hasta donde está su cabeza.</li>
+      <li>Gana quien llegue primero a la casilla 36, <b>Decisión</b>. Si la partida se termina antes, gana quien esté más adelante; en empate, quien tenga más aciertos.</li>
+      <li>Lee la explicación de cada respuesta: ahí está la clave para la siguiente pregunta.</li>
+    </ol>
+    <div class="actions"><button class="btn primary" data-close>Entendido</button></div>
+  </div>
+</div>
+
+<!-- Nueva partida -->
+<div class="modal" id="setupModal" role="dialog" aria-modal="true" aria-labelledby="setupTitle">
+  <div class="box">
+    <h3 id="setupTitle">Nueva partida</h3>
+    <div class="row">
+      <label>Modo:</label>
+      <div class="seg" id="modeSeg">
+        <button type="button" data-mode="ind" class="on">Individual</button>
+        <button type="button" data-mode="eq">Equipos</button>
+      </div>
+    </div>
+    <div class="row">
+      <label for="nPlayers" id="nLabel">Número de jugadores:</label>
+      <select id="nPlayers"></select>
+      <label for="timeSel" style="margin-left:10px">Tiempo por pregunta:</label>
+      <select id="timeSel">
+        <option value="0">Sin límite</option>
+        <option value="20">20 segundos</option>
+        <option value="30" selected>30 segundos</option>
+        <option value="45">45 segundos</option>
+      </select>
+    </div>
+    <div class="names" id="names"></div>
+    <div class="actions">
+      <button class="btn" data-close>Cancelar</button>
+      <button class="btn primary" id="startBtn">Comenzar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Pregunta -->
+<div class="modal" id="qModal" role="dialog" aria-modal="true" aria-labelledby="qText">
+  <div class="box qbox">
+    <div class="qhead">
+      <span class="qcat" id="qCat">Categoría</span>
+      <span class="qwho" id="qWho"></span>
+      <span class="timer" id="qTimer"></span>
+    </div>
+    <div class="qtext" id="qText"></div>
+    <div class="opts" id="qOpts"></div>
+    <div class="feedback" id="qFb"></div>
+    <div class="actions"><button class="btn primary" id="qNext" style="display:none">Continuar</button></div>
+  </div>
+</div>
+
+<!-- Bitácora -->
+<div class="modal" id="logModal" role="dialog" aria-modal="true" aria-labelledby="logTitle">
+  <div class="box">
+    <h3 id="logTitle">Bitácora de la partida</h3>
+    <ul class="log" id="logList"></ul>
+    <div class="actions">
+      <button class="btn" id="csvBtn">Descargar CSV</button>
+      <button class="btn primary" data-close>Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Fin / confirmaciones -->
+<div class="modal" id="endModal" role="dialog" aria-modal="true" aria-labelledby="endTitle">
+  <div class="box">
+    <h3 id="endTitle">Resultados</h3>
+    <p id="endMsg"></p>
+    <ol class="rank" id="rank"></ol>
+    <div class="actions">
+      <button class="btn" id="endLogBtn">Ver bitácora</button>
+      <button class="btn primary" data-close>Cerrar</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+  <div class="box" style="max-width:480px">
+    <h3 id="confirmTitle">¿Terminar la partida?</h3>
+    <p id="confirmMsg">Se mostrará la clasificación con las posiciones actuales.</p>
+    <div class="actions">
+      <button class="btn" data-close>Cancelar</button>
+      <button class="btn primary" id="confirmOk">Sí, continuar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<canvas id="confetti"></canvas>
+
+<script>
+(function(){
+"use strict";
+const GOAL=36;
+const LADDERS=[
+  {from:3,to:11,label:"Definiste bien la pregunta de negocio"},
+  {from:6,to:19,label:"Limpiaste y documentaste los datos"},
+  {from:14,to:26,label:"Validaste con datos de prueba"},
+  {from:21,to:33,label:"Comunicaste con una gráfica clara"}
+];
+// Serpientes: la cola está en la casilla alta (from) y la cabeza en la casilla de destino (to): se baja por la cola.
+const SNAKES=[
+  {from:17,to:8,label:"Sobreajuste: el modelo memorizó"},
+  {from:24,to:12,label:"Datos sesgados"},
+  {from:31,to:22,label:"Correlación no es causalidad"},
+  {from:35,to:25,label:"Borraste atípicos sin revisarlos"}
+];
+const TAGS={1:"Inicio",36:"Decisión"};
+LADDERS.forEach(l=>TAGS[l.from]="🪜 "+l.label);
+SNAKES.forEach(s=>TAGS[s.from]="🐍 "+s.label);
+const COLORS=["#D6001C","#1F6FB2","#2E8B57","#E08A00","#7B3FA0","#00897B","#5D4037","#C2185B"];
+
+const Q=[
+ {c:"Proceso",q:"¿Cuál es la primera fase de CRISP-DM?",o:["Entendimiento del negocio","Modelado","Preparación de los datos","Despliegue"],a:0,e:"Todo empieza por entender el problema de negocio: qué decisión queremos mejorar y cómo mediremos el éxito."},
+ {c:"Proceso",q:"¿Qué tipo de analítica responde la pregunta «¿qué pasará?»?",o:["Descriptiva","Diagnóstica","Predictiva","Prescriptiva"],a:2,e:"La predictiva estima lo que probablemente ocurrirá, por ejemplo la demanda del próximo mes."},
+ {c:"Proceso",q:"¿Qué tipo de analítica responde «¿por qué pasó?»?",o:["Descriptiva","Diagnóstica","Predictiva","Prescriptiva"],a:1,e:"La diagnóstica busca causas: por qué cayeron las ventas, por qué aumentó la mora."},
+ {c:"Proceso",q:"¿Qué tipo de analítica responde «¿qué conviene hacer?»?",o:["Prescriptiva","Descriptiva","Diagnóstica","Exploratoria"],a:0,e:"La prescriptiva recomienda acciones, como reponer inventario en dos tiendas específicas."},
+ {c:"Proceso",q:"Un tablero que muestra las ventas del mes pasado es analítica…",o:["Predictiva","Prescriptiva","Descriptiva","Agentiva"],a:2,e:"Describe lo que ya ocurrió. Es el punto de partida de casi todo análisis."},
+ {c:"Proceso",q:"¿En qué fase de un proyecto de ciencia de datos se suele invertir más tiempo?",o:["Despliegue","Preparación de los datos","Presentación de resultados","Elección del algoritmo"],a:1,e:"Limpiar, integrar y transformar datos suele consumir la mayor parte del tiempo de un proyecto."},
+ {c:"Datos",q:"Edad, ingreso y temperatura son variables…",o:["Cualitativas nominales","Cualitativas ordinales","Cuantitativas","Binarias"],a:2,e:"Son variables numéricas: se pueden medir y operar matemáticamente."},
+ {c:"Datos",q:"El nivel de satisfacción «bajo, medio, alto» es una variable…",o:["Cuantitativa continua","Cualitativa ordinal","Cualitativa nominal","Cuantitativa discreta"],a:1,e:"Es una categoría con orden natural, pero sin distancia numérica exacta entre niveles."},
+ {c:"Datos",q:"Un valor muy alejado del resto de los datos se llama…",o:["Dato faltante","Duplicado","Valor atípico (outlier)","Variable objetivo"],a:2,e:"Un atípico puede ser un error de captura o un caso real interesante. Hay que investigarlo antes de borrarlo."},
+ {c:"Datos",q:"Fotos, audios y textos libres son ejemplos de datos…",o:["Estructurados","No estructurados","Tabulares","Agregados"],a:1,e:"No caben de forma natural en filas y columnas. Hoy la IA permite analizarlos a gran escala."},
+ {c:"Datos",q:"¿Qué significa el «linaje» de los datos?",o:["Su antigüedad","Su tamaño en disco","De dónde vienen y qué transformaciones tuvieron","Quién los capturó primero"],a:2,e:"Conocer el linaje permite confiar en un dato y rastrear errores hasta su origen."},
+ {c:"Datos",q:"«Garbage in, garbage out» significa que…",o:["Hay que borrar los datos viejos","Con datos de mala calidad se obtienen malos resultados","Los modelos generan basura digital","Se deben reciclar los modelos"],a:1,e:"Ningún algoritmo compensa datos incorrectos, incompletos o sesgados."},
+ {c:"Datos",q:"Una muestra es representativa cuando…",o:["Es muy grande","Se tomó en un solo día","Refleja las características de la población","Solo incluye casos extremos"],a:2,e:"El tamaño ayuda, pero lo que importa es que la muestra se parezca a la población que queremos estudiar."},
+ {c:"Datos",q:"Normalizar o escalar variables sirve para…",o:["Eliminar los atípicos","Ponerlas en rangos comparables","Convertirlas en texto","Aumentar el número de filas"],a:1,e:"Evita que una variable con valores grandes, como el ingreso, domine sobre otra con valores pequeños, como la edad."},
+ {c:"Estadística",q:"En un grupo con ingresos normales y un millonario, ¿qué medida representa mejor el ingreso típico?",o:["La media","La mediana","El máximo","El rango"],a:1,e:"La mediana no se deja arrastrar por valores extremos; la media sí."},
+ {c:"Estadística",q:"Datos: 2, 4, 4, 5, 10. ¿Cuál es la media?",o:["4","5","4.5","10"],a:1,e:"(2 + 4 + 4 + 5 + 10) ÷ 5 = 25 ÷ 5 = 5."},
+ {c:"Estadística",q:"Datos: 2, 4, 4, 5, 10. ¿Cuál es la mediana?",o:["4","5","4.5","2"],a:0,e:"Con los datos ordenados, el valor central es el tercero: 4."},
+ {c:"Estadística",q:"¿Qué gráfica muestra mejor la distribución de una variable numérica?",o:["Gráfica de pastel","Histograma","Mapa","Gráfica de líneas"],a:1,e:"El histograma muestra cómo se reparten los valores en intervalos."},
+ {c:"Estadística",q:"Un diagrama de caja (boxplot) muestra…",o:["Solo el promedio","La mediana, los cuartiles y los atípicos","La tendencia en el tiempo","La proporción de cada categoría"],a:1,e:"Resume la distribución en cinco números y señala los valores atípicos."},
+ {c:"Estadística",q:"Una correlación de −0.9 indica una relación lineal…",o:["Débil y positiva","Inexistente","Fuerte y negativa","Fuerte y positiva"],a:2,e:"Cerca de −1: cuando una variable sube, la otra baja de forma muy consistente."},
+ {c:"Estadística",q:"Las ventas de helados y los ahogamientos aumentan juntos en verano. ¿Qué lo explica mejor?",o:["Los helados causan ahogamientos","Los ahogamientos aumentan las ventas","Una tercera variable: el calor","Es pura casualidad"],a:2,e:"Correlación no implica causalidad: el calor influye en ambas variables."},
+ {c:"Estadística",q:"En una distribución normal, ¿qué porcentaje aproximado cae a ±1 desviación estándar de la media?",o:["50 %","68 %","95 %","99.7 %"],a:1,e:"Es la regla empírica 68-95-99.7: 68 % a una desviación, 95 % a dos y 99.7 % a tres."},
+ {c:"Estadística",q:"¿Cuál es la probabilidad de obtener un 6 al lanzar un dado justo?",o:["1/2","1/3","1/6","1/12"],a:2,e:"Hay seis resultados igualmente probables y solo uno es favorable."},
+ {c:"Estadística",q:"En una prueba de hipótesis con α = 0.05, se rechaza la hipótesis nula cuando…",o:["p > 0.05","p < 0.05","p = 1","La muestra es pequeña"],a:1,e:"Un p-valor menor que α indica que los datos serían poco probables si la hipótesis nula fuera cierta."},
+ {c:"Modelos",q:"Predecir el precio de una casa es un problema de…",o:["Clasificación","Regresión","Clustering","Reducción de dimensiones"],a:1,e:"La variable a predecir es numérica y continua."},
+ {c:"Modelos",q:"Predecir si un cliente abandonará el servicio (sí o no) es un problema de…",o:["Regresión","Clasificación","Clustering","Series de tiempo"],a:1,e:"La salida es una categoría: abandona o no abandona."},
+ {c:"Modelos",q:"Agrupar clientes parecidos sin etiquetas previas es…",o:["Aprendizaje supervisado","Clustering (no supervisado)","Regresión lineal","Prueba de hipótesis"],a:1,e:"El clustering encuentra grupos por similitud, sin una respuesta correcta conocida."},
+ {c:"Modelos",q:"¿Cómo se llama la variable que queremos predecir?",o:["Variable objetivo o dependiente","Variable independiente","Índice","Parámetro"],a:0,e:"Las variables independientes (predictoras) se usan para estimar la variable objetivo."},
+ {c:"Modelos",q:"Un modelo tiene 99 % de aciertos en entrenamiento y 60 % con datos nuevos. Probablemente sufre…",o:["Subajuste","Sobreajuste","Falta de variables","Exceso de datos de prueba"],a:1,e:"Memorizó los datos de entrenamiento en lugar de aprender patrones generales."},
+ {c:"Modelos",q:"¿Para qué se separa un conjunto de datos de prueba?",o:["Para entrenar más rápido","Para evaluar el modelo con datos que no vio","Para eliminar atípicos","Para tener más filas"],a:1,e:"Solo así sabemos cómo se comportará el modelo con casos reales nuevos."},
+ {c:"Modelos",q:"En una regresión lineal y = 3 + 2x, ¿cuánto vale y cuando x = 5?",o:["10","13","15","8"],a:1,e:"y = 3 + 2 × 5 = 13."},
+ {c:"Modelos",q:"Un R² de 0.85 en una regresión significa que…",o:["El modelo acierta 85 de cada 100 casos","Explica cerca de 85 % de la variación de la variable objetivo","El error es de 15 %","Hay 85 % de datos válidos"],a:1,e:"R² mide qué proporción de la variabilidad de y explica el modelo."},
+ {c:"Modelos",q:"En fraude, 99 % de las transacciones son legítimas. Un modelo que siempre dice «legítima» logra 99 % de exactitud. ¿Qué nos enseña?",o:["Es un modelo excelente","La exactitud puede engañar con clases desbalanceadas","Hay que usar más datos de fraude falsos","El fraude no se puede predecir"],a:1,e:"Ese modelo no detecta ni un solo fraude. Con clases desbalanceadas conviene mirar otras métricas."},
+ {c:"Modelos",q:"En la detección de una enfermedad, un «falso negativo» es…",o:["Decir que está enfermo cuando está sano","Decir que está sano cuando está enfermo","Un error del laboratorio","Un dato faltante"],a:1,e:"El modelo dijo «negativo» y se equivocó: el paciente sí estaba enfermo."},
+ {c:"Fundamentos",q:"¿Qué es la ciencia de datos?",o:["Una rama del diseño gráfico","La combinación de estadística, programación y conocimiento del negocio para extraer conocimiento de los datos","El almacenamiento de archivos en la nube","La reparación de computadoras"],a:1,e:"Integra matemáticas, computación y conocimiento del contexto para convertir datos en decisiones."},
+ {c:"Fundamentos",q:"¿Qué es un dataset?",o:["Un programa para hacer gráficas","Un conjunto de datos organizado, normalmente en filas y columnas","Un tipo de computadora","Un algoritmo de predicción"],a:1,e:"Es la materia prima de cualquier análisis: una colección organizada de datos sobre un tema."},
+ {c:"Fundamentos",q:"En una tabla de datos ordenada, ¿qué representa normalmente cada fila?",o:["Una variable","Una observación o registro","Un tipo de gráfica","Un resultado del modelo"],a:1,e:"Cada fila es una observación (un cliente, una venta, un estudiante) y cada columna es una variable."},
+ {c:"Fundamentos",q:"¿Qué es el aprendizaje automático (machine learning)?",o:["Programar a mano cada regla de decisión","Que un sistema aprenda patrones a partir de datos","Aprender a escribir más rápido en el teclado","Guardar datos de forma automática"],a:1,e:"En lugar de escribir todas las reglas, el modelo las aprende de ejemplos."},
+ {c:"Fundamentos",q:"Las «V» clásicas del big data son volumen, velocidad y…",o:["Valor de mercado","Variedad","Visualización","Virtualidad"],a:1,e:"Volumen, velocidad y variedad describen datos demasiado grandes, rápidos o diversos para las herramientas tradicionales."},
+ {c:"Modelos",q:"El aprendizaje supervisado requiere…",o:["Datos sin ninguna etiqueta","Datos etiquetados con la respuesta correcta","Que una persona revise cada predicción","Solo datos de texto"],a:1,e:"El modelo aprende comparando sus predicciones con respuestas conocidas, como «spam» o «no spam»."},
+ {c:"Modelos",q:"Una matriz de confusión muestra…",o:["La correlación entre variables","Los aciertos y errores de un clasificador por clase","El tiempo de entrenamiento","Los datos faltantes"],a:1,e:"Cruza la clase real con la clase predicha y permite ver qué tipo de errores comete el modelo."},
+ {c:"Modelos",q:"En un filtro de spam, un «falso positivo» es…",o:["Un spam que llega a la bandeja de entrada","Un correo legítimo marcado como spam","Un spam detectado correctamente","Un correo sin asunto"],a:1,e:"El modelo dijo «positivo» (spam) y se equivocó: el correo era legítimo."},
+ {c:"Estadística",q:"¿Qué mide la desviación estándar?",o:["El valor más frecuente","Qué tan dispersos están los datos respecto a la media","El valor central de los datos","El número de datos"],a:1,e:"Una desviación estándar grande indica datos muy dispersos; una pequeña, datos concentrados cerca de la media."},
+ {c:"Estadística",q:"Datos: 3, 7 y 12. ¿Cuál es el rango?",o:["7","9","12","22"],a:1,e:"Rango = máximo − mínimo = 12 − 3 = 9."},
+ {c:"Visualización",q:"¿Qué gráfica es más adecuada para mostrar la evolución de una variable en el tiempo?",o:["Gráfica de pastel","Gráfica de líneas","Histograma","Diagrama de caja"],a:1,e:"La gráfica de líneas muestra tendencias y cambios a lo largo del tiempo."},
+ {c:"Visualización",q:"¿Qué gráfica permite ver la relación entre dos variables numéricas?",o:["Gráfica de dispersión","Gráfica de pastel","Gráfica de barras apiladas","Tabla de frecuencias"],a:0,e:"Cada punto es una observación; así se aprecia si las variables se mueven juntas."},
+ {c:"Herramientas",q:"¿Qué lenguaje de programación es el más usado en ciencia de datos?",o:["COBOL","Python","Pascal","Fortran"],a:1,e:"Python domina por sus librerías para análisis, visualización y aprendizaje automático."},
+ {c:"Herramientas",q:"¿Qué librería de Python se usa principalmente para manipular tablas de datos?",o:["pandas","pygame","requests","tkinter"],a:0,e:"pandas ofrece los DataFrame, tablas para filtrar, agrupar, unir y resumir datos."},
+ {c:"Herramientas",q:"¿Para qué sirve SQL?",o:["Para diseñar páginas web","Para consultar y gestionar bases de datos","Para editar fotografías","Para entrenar redes neuronales"],a:1,e:"SQL es el lenguaje estándar para extraer y organizar datos almacenados en bases de datos relacionales."},
+ {c:"Ética",q:"Si un modelo se entrena con datos que no representan a toda la población, probablemente…",o:["Funcionará igual para todos","Funcionará peor para los grupos poco representados","Será más exacto","No podrá entrenarse"],a:1,e:"Es sesgo de representación: el modelo solo aprende de la realidad que aparece en sus datos."},
+ {c:"Ética",q:"Anonimizar un conjunto de datos significa…",o:["Borrar todas las filas","Quitar la información que permite identificar a las personas","Cifrar el archivo con contraseña","Cambiar el nombre del archivo"],a:1,e:"Protege la privacidad: se eliminan o transforman nombres, documentos, teléfonos y otros identificadores."}
+];
+
+// ---------- estado ----------
+let S={players:[],turn:0,active:false,busy:false,log:[],deck:[],timer:0,mode:"ind",startTime:null,winner:null};
+let qState=null, tick=null;
+const $=id=>document.getElementById(id);
+
+// ---------- tablero ----------
+function cellXY(n){ // centro en coordenadas 0-600
+  const r=Math.floor((n-1)/6), k=(n-1)%6, col=(r%2===0)?k:5-k;
+  return {x:col*100+50,y:(5-r)*100+50,row:5-r,col};
+}
+function buildBoard(){
+  const b=$("board"), lb=$("labels"); b.innerHTML=""; lb.innerHTML="";
+  const cells=[];
+  for(let n=1;n<=GOAL;n++){const p=cellXY(n);cells.push({n,...p});}
+  cells.sort((a,b)=>a.row-b.row||a.col-b.col);
+  cells.forEach(c=>{
+    const d=document.createElement("div");
+    d.className="cell "+((c.row+c.col)%2?"c1":"c0")+(c.n===1?" start":"")+(c.n===GOAL?" goal":"");
+    d.innerHTML='<span class="num">'+c.n+'</span>'+(TAGS[c.n]?'<span class="tag">'+TAGS[c.n]+'</span>':"");
+    b.appendChild(d); lb.appendChild(d.cloneNode(true));
+  });
+  drawOverlay();
+}
+function drawOverlay(){
+  const svg=$("overlay"); let h="";
+  LADDERS.forEach(l=>{
+    const a=cellXY(l.from), b=cellXY(l.to);
+    const dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy), ux=dx/len, uy=dy/len, px=-uy*13, py=ux*13;
+    const s1={x:a.x+ux*18,y:a.y+uy*18}, e1={x:b.x-ux*18,y:b.y-uy*18};
+    h+='<g opacity=".92">';
+    h+=`<line x1="${s1.x+px}" y1="${s1.y+py}" x2="${e1.x+px}" y2="${e1.y+py}" stroke="var(--ladder)" stroke-width="6" stroke-linecap="round"/>`;
+    h+=`<line x1="${s1.x-px}" y1="${s1.y-py}" x2="${e1.x-px}" y2="${e1.y-py}" stroke="var(--ladder)" stroke-width="6" stroke-linecap="round"/>`;
+    const steps=Math.max(3,Math.round(len/32));
+    for(let i=1;i<steps;i++){const t=i/steps,x=s1.x+(e1.x-s1.x)*t,y=s1.y+(e1.y-s1.y)*t;
+      h+=`<line x1="${x+px}" y1="${y+py}" x2="${x-px}" y2="${y-py}" stroke="var(--ladder)" stroke-width="4.5" stroke-linecap="round"/>`;}
+    h+='</g>';
+  });
+  SNAKES.forEach((s,i)=>{
+    // cola en la casilla alta (from), cabeza en la casilla de destino (to)
+    const t=cellXY(s.from), hd=cellXY(s.to);
+    const dx=hd.x-t.x, dy=hd.y-t.y, len=Math.hypot(dx,dy), nx=-dy/len, ny=dx/len, amp=26*(i%2?1:-1);
+    const c1={x:t.x+dx*.33+nx*amp*1.6,y:t.y+dy*.33+ny*amp*1.6}, c2={x:t.x+dx*.66-nx*amp*1.6,y:t.y+dy*.66-ny*amp*1.6};
+    const d=`M${t.x},${t.y} C${c1.x},${c1.y} ${c2.x},${c2.y} ${hd.x},${hd.y}`;
+    h+=`<g opacity=".93"><path d="${d}" fill="none" stroke="#1B5E20" stroke-width="15" stroke-linecap="round"/>`;
+    h+=`<path d="${d}" fill="none" stroke="#43A047" stroke-width="10" stroke-linecap="round"/>`;
+    h+=`<path d="${d}" fill="none" stroke="#C5E1A5" stroke-width="3" stroke-dasharray="3 11" stroke-linecap="round"/>`;
+    // cola afilada
+    h+=`<circle cx="${t.x}" cy="${t.y}" r="4" fill="#1B5E20"/>`;
+    // cabeza con ojos y lengua, orientada según la llegada
+    const ang=Math.atan2(hd.y-c2.y,hd.x-c2.x)*180/Math.PI;
+    h+=`<g transform="translate(${hd.x},${hd.y}) rotate(${ang})"><path d="M16,0 l12,-5 M16,0 l12,5" stroke="#D6001C" stroke-width="2.5" stroke-linecap="round"/>`+
+       `<ellipse cx="0" cy="0" rx="17" ry="13" fill="#2E7D32" stroke="#1B5E20" stroke-width="3"/>`+
+       `<circle cx="5" cy="-6" r="3.6" fill="#fff"/><circle cx="5" cy="6" r="3.6" fill="#fff"/><circle cx="6" cy="-6" r="1.8" fill="#111"/><circle cx="6" cy="6" r="1.8" fill="#111"/></g></g>`;
+  });
+  svg.innerHTML=h;
+}
+function renderTokens(){
+  const box=$("tokens"); box.innerHTML="";
+  const groups={};
+  S.players.forEach((p,i)=>{(groups[p.pos]=groups[p.pos]||[]).push(i);});
+  Object.keys(groups).forEach(pos=>{
+    const ids=groups[pos], c=cellXY(+pos);
+    ids.forEach((i,k)=>{
+      const p=S.players[i], off=ids.length>1?(k-(ids.length-1)/2)*22:0, offy=ids.length>4?((k%2)?10:-10):6;
+      const d=document.createElement("div");
+      d.className="token"+(S.active&&i===S.turn?" active":"");
+      d.style.background=p.color;
+      d.style.left=((c.x+off*(ids.length>4?.55:1))/6)+"%";
+      d.style.top=((c.y+offy)/6)+"%";
+      d.textContent=initials(p.name); d.title=p.name;
+      box.appendChild(d);
+    });
+  });
+}
+function initials(n){const w=n.trim().split(/\s+/);return ((w[0]||"?")[0]+(w[1]?w[1][0]:"")).toUpperCase();}
+
+// ---------- panel ----------
+function renderPlayers(){
+  const ul=$("players");
+  if(!S.players.length){ul.innerHTML='<li class="empty" style="background:none;padding:0">Aún no hay jugadores.</li>';return;}
+  ul.innerHTML=S.players.map((p,i)=>`<li class="${S.active&&i===S.turn?"active":""}"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}<span class="pos">Casilla ${p.pos}</span><span class="sc">${p.ok}/${p.ans} ✓</span></li>`).join("");
+}
+function setTurnUI(){
+  const p=S.players[S.turn];
+  $("turnName").textContent=S.active?p.name:(S.winner?"Partida terminada":"Sin partida");
+  $("rollBtn").disabled=!S.active||S.busy;
+  $("endBtn").disabled=!S.active;
+  renderPlayers(); renderTokens();
+}
+function status(t){$("status").innerHTML=t;}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
+const PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+function drawDie(v){const d=$("die");d.innerHTML="";for(let i=0;i<9;i++){const s=document.createElement("span");s.className="pip"+(PIPS[v]&&PIPS[v].includes(i)?" on":"");d.appendChild(s);}}
+
+// ---------- bitácora ----------
+function now(){const d=new Date();return d.toLocaleTimeString("es-PE",{hour:"2-digit",minute:"2-digit",second:"2-digit"});}
+function addLog(txt,row){S.log.push({t:now(),txt,row:row||null});}
+function renderLog(){
+  const ul=$("logList");
+  ul.innerHTML=S.log.length?S.log.slice().reverse().map(l=>`<li><span class="t">${l.t}</span>${l.txt}</li>`).join(""):'<li class="empty">Todavía no hay movimientos.</li>';
+}
+function downloadCSV(){
+  const rows=[["Hora","Jugador","Dado","Categoría","Pregunta","Respuesta elegida","Correcta","Desde","Hasta"]];
+  S.log.filter(l=>l.row).forEach(l=>rows.push([l.t,...l.row]));
+  if(rows.length===1){toast("La bitácora aún no tiene respuestas.");return;}
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\r\n");
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8"}));
+  a.download="bitacora_ciencia_de_datos.csv"; document.body.appendChild(a); a.click(); a.remove();
+}
+
+// ---------- modales ----------
+function open(id){$(id).classList.add("open");}
+function close(id){$(id).classList.remove("open");}
+document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>b.closest(".modal").classList.remove("open")));
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"){["rulesModal","logModal","endModal","confirmModal","setupModal"].forEach(close);}
+  if($("qModal").classList.contains("open")&&qState&&!qState.done&&/^[1-4]$/.test(e.key)){const b=$("qOpts").children[+e.key-1];if(b)b.click();}
+});
+function toast(t){const el=$("toast");el.textContent=t;el.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove("show"),2600);}
+
+// ---------- configuración ----------
+function setupNames(){
+  const n=+$("nPlayers").value, eq=S.mode==="eq", box=$("names"), prev=[...box.querySelectorAll("input")].map(i=>i.value);
+  box.innerHTML="";
+  for(let i=0;i<n;i++){
+    const d=document.createElement("div");
+    d.innerHTML=`<span class="dot" style="background:${COLORS[i]}"></span><input type="text" maxlength="24" placeholder="${eq?"Equipo "+(i+1):"Nombre del jugador "+(i+1)}" value="${esc(prev[i]||"")}" aria-label="${eq?"Nombre del equipo "+(i+1):"Nombre del jugador "+(i+1)}">`;
+    box.appendChild(d);
+  }
+}
+function openSetup(){
+  const go=()=>{close("confirmModal");open("setupModal");setupNames();const f=$("names").querySelector("input");if(f)f.focus();};
+  if(S.active){askConfirm("¿Iniciar una nueva partida?","Se perderá la partida en curso.",go);} else go();
+}
+$("modeSeg").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b)return;
+  S.mode=b.dataset.mode; [...$("modeSeg").children].forEach(x=>x.classList.toggle("on",x===b));
+  $("nLabel").textContent=S.mode==="eq"?"Número de equipos:":"Número de jugadores:"; setupNames();
+});
+(function(){const s=$("nPlayers");for(let i=1;i<=8;i++){const o=document.createElement("option");o.value=i;o.textContent=i;if(i===4)o.selected=true;s.appendChild(o);}s.addEventListener("change",setupNames);})();
+$("startBtn").addEventListener("click",()=>{
+  const inputs=[...$("names").querySelectorAll("input")];
+  const eq=S.mode==="eq";
+  const names=inputs.map((x,i)=>x.value.trim()||(eq?"Equipo "+(i+1):"Jugador "+(i+1)));
+  const seen={}; for(const n of names){const k=n.toLowerCase(); if(seen[k]){toast("Hay nombres repetidos: «"+n+"». Usa nombres distintos.");return;} seen[k]=1;}
+  S.players=names.map((n,i)=>({name:n,color:COLORS[i],pos:1,ok:0,ans:0}));
+  S.turn=0;S.active=true;S.busy=false;S.log=[];S.winner=null;S.timer=+$("timeSel").value;S.deck=shuffle(Q.map((_,i)=>i));S.startTime=new Date();
+  addLog("<b>Nueva partida</b> ("+(eq?"equipos":"individual")+"): "+names.map(esc).join(", ")+".");
+  close("setupModal"); drawDie(0); setTurnUI();
+  status("Turno de <b>"+esc(S.players[0].name)+"</b>. Lanza el dado.");
+});
+
+// ---------- turno ----------
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function nextQuestion(){if(!S.deck.length)S.deck=shuffle(Q.map((_,i)=>i));return Q[S.deck.pop()];}
+$("rollBtn").addEventListener("click",()=>{
+  if(!S.active||S.busy)return;
+  S.busy=true; setTurnUI();
+  const die=$("die"); let k=0;
+  die.classList.remove("roll"); void die.offsetWidth; die.classList.add("roll");
+  const iv=setInterval(()=>{drawDie(1+Math.floor(Math.random()*6));if(++k>7){clearInterval(iv);
+    const v=1+Math.floor(Math.random()*6); drawDie(v);
+    const p=S.players[S.turn];
+    status("<b>"+esc(p.name)+"</b> sacó <b>"+v+"</b>. Responde bien para avanzar.");
+    setTimeout(()=>askQuestion(v),550);
+  }},60);
+});
+function askQuestion(v){
+  const p=S.players[S.turn], q=nextQuestion();
+  const order=shuffle([0,1,2,3]);
+  qState={q,v,order,done:false};
+  $("qCat").textContent=q.c;
+  $("qWho").textContent=p.name+" · dado: "+v+" · casilla "+p.pos;
+  $("qText").textContent=q.q;
+  const opts=$("qOpts"); opts.innerHTML="";
+  order.forEach((oi,k)=>{
+    const b=document.createElement("button"); b.className="opt"; b.type="button";
+    b.innerHTML='<span class="k">'+(k+1)+'</span><span>'+esc(q.o[oi])+'</span>';
+    b.addEventListener("click",()=>answer(k)); opts.appendChild(b);
+  });
+  $("qFb").className="feedback"; $("qFb").innerHTML=""; $("qNext").style.display="none";
+  open("qModal");
+  clearInterval(tick);
+  if(S.timer>0){let left=S.timer;$("qTimer").textContent=left+" s";
+    tick=setInterval(()=>{left--;$("qTimer").textContent=left+" s";if(left<=0){clearInterval(tick);answer(-1);}},1000);
+  } else $("qTimer").textContent="";
+}
+function answer(k){
+  if(!qState||qState.done)return; qState.done=true; clearInterval(tick);
+  const {q,order,v}=qState, chosen=k>=0?order[k]:-1, ok=chosen===q.a, p=S.players[S.turn];
+  [...$("qOpts").children].forEach((b,i)=>{b.disabled=true; if(order[i]===q.a)b.classList.add("correct"); else if(i===k)b.classList.add("wrong");});
+  const fb=$("qFb");
+  const head=ok?"✅ ¡Correcto! Avanzas "+v+(v===1?" casilla.":" casillas."):(k<0?"⏰ Se acabó el tiempo.":"❌ Respuesta incorrecta.")+" Te quedas en la casilla "+p.pos+".";
+  fb.className="feedback show "+(ok?"ok":"bad"); fb.innerHTML="<b>"+head+"</b><br>"+esc(q.e);
+  p.ans++; if(ok)p.ok++;
+  qState.ok=ok; qState.chosen=chosen>=0?q.o[chosen]:"(sin respuesta)";
+  $("qNext").style.display=""; $("qNext").focus();
+}
+$("qNext").addEventListener("click",()=>{
+  close("qModal");
+  const p=S.players[S.turn], {ok,v,q,chosen}=qState, from=p.pos;
+  if(!ok){
+    addLog("<b>"+esc(p.name)+"</b> sacó "+v+" y falló una pregunta de "+q.c.toLowerCase()+". Se queda en la casilla "+p.pos+".",[p.name,v,q.c,q.q,chosen,"No",from,from]);
+    status("<b>"+esc(p.name)+"</b> se queda en la casilla "+p.pos+"."); renderPlayers(); endTurn(); return;
+  }
+  const target=Math.min(GOAL,p.pos+v);
+  stepMove(p,target,()=>{
+    let msg="<b>"+esc(p.name)+"</b> avanzó a la casilla "+p.pos+".";
+    const L=LADDERS.find(l=>l.from===p.pos), Sn=SNAKES.find(s=>s.from===p.pos);
+    const finish=()=>{
+      addLog("<b>"+esc(p.name)+"</b> sacó "+v+", acertó una pregunta de "+q.c.toLowerCase()+" y pasó de la casilla "+from+" a la "+p.pos+".",[p.name,v,q.c,q.q,chosen,"Sí",from,p.pos]);
+      status(msg); renderPlayers();
+      if(p.pos>=GOAL){win(p);return;} endTurn();
+    };
+    if(L){msg+=" 🪜 <b>"+L.label+"</b>: sube a la "+L.to+".";toast("🪜 "+L.label+": sube a la casilla "+L.to);
+      setTimeout(()=>{p.pos=L.to;renderTokens();finish();},700);}
+    else if(Sn){msg+=" 🐍 <b>"+Sn.label+"</b>: baja a la "+Sn.to+".";toast("🐍 "+Sn.label+": baja a la casilla "+Sn.to);
+      setTimeout(()=>{p.pos=Sn.to;renderTokens();finish();},700);}
+    else finish();
+  });
+});
+function stepMove(p,target,cb){
+  if(p.pos>=target){cb();return;}
+  p.pos++; renderTokens(); setTimeout(()=>stepMove(p,target,cb),260);
+}
+function endTurn(){
+  S.turn=(S.turn+1)%S.players.length; S.busy=false; setTurnUI();
+  status($("status").innerHTML+"<br>Turno de <b>"+esc(S.players[S.turn].name)+"</b>.");
+}
+function ranking(){
+  return S.players.map((p,i)=>({...p,i})).sort((a,b)=>b.pos-a.pos||b.ok-a.ok||a.ans-b.ans);
+}
+function showResults(title,msg){
+  $("endTitle").textContent=title; $("endMsg").innerHTML=msg;
+  $("rank").innerHTML=ranking().map((p,k)=>`<li><b>${k+1}.</b><span class="dot" style="background:${p.color}"></span>${esc(p.name)}<span class="m">Casilla ${p.pos} · ${p.ok} de ${p.ans} aciertos</span></li>`).join("");
+  open("endModal");
+}
+function win(p){
+  S.active=false;S.busy=false;S.winner=p.name; setTurnUI();
+  addLog("🏆 <b>"+esc(p.name)+"</b> llegó a la casilla "+GOAL+" y ganó la partida.");
+  status("🏆 <b>"+esc(p.name)+"</b> llegó a la <b>Decisión</b> y ganó la partida.");
+  confetti(); showResults("¡"+p.name+" llegó a la decisión!","¡Felicidades! Así quedó la clasificación:");
+}
+function askConfirm(t,m,fn){$("confirmTitle").textContent=t;$("confirmMsg").textContent=m;$("confirmOk").onclick=fn;open("confirmModal");}
+$("endBtn").addEventListener("click",()=>{
+  if(!S.active)return;
+  askConfirm("¿Terminar la partida?","Se mostrará la clasificación con las posiciones actuales.",()=>{
+    close("confirmModal"); clearInterval(tick); close("qModal");
+    const r=ranking(); S.active=false;S.busy=false;S.winner=r[0].name; setTurnUI();
+    addLog("<b>Partida terminada</b> por el profesor. Va adelante: <b>"+esc(r[0].name)+"</b> (casilla "+r[0].pos+").");
+    status("Partida terminada. Va adelante <b>"+esc(r[0].name)+"</b>.");
+    confetti(); showResults("Partida terminada","Gana quien está más adelante; en empate, quien tiene más aciertos.");
+  });
+});
+$("rulesBtn").addEventListener("click",()=>open("rulesModal"));
+$("logBtn").addEventListener("click",()=>{renderLog();open("logModal");});
+$("endLogBtn").addEventListener("click",()=>{close("endModal");renderLog();open("logModal");});
+$("csvBtn").addEventListener("click",downloadCSV);
+$("newBtn").addEventListener("click",openSetup);
+
+// ---------- confeti ----------
+function confetti(){
+  const c=$("confetti"),x=c.getContext("2d"); c.width=innerWidth;c.height=innerHeight;
+  const P=Array.from({length:160},()=>({x:Math.random()*c.width,y:-20-Math.random()*c.height*.5,r:4+Math.random()*5,vx:-2+Math.random()*4,vy:2+Math.random()*4,col:COLORS[Math.floor(Math.random()*COLORS.length)],a:Math.random()*6}));
+  let f=0;(function draw(){x.clearRect(0,0,c.width,c.height);P.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.a+=.1;x.fillStyle=p.col;x.save();x.translate(p.x,p.y);x.rotate(p.a);x.fillRect(-p.r,-p.r/2,p.r*2,p.r);x.restore();});
+    if(++f<170)requestAnimationFrame(draw);else x.clearRect(0,0,c.width,c.height);})();
+}
+
+buildBoard(); drawDie(0); setTurnUI();
+})();
+</script>
+</body>
+</html>
